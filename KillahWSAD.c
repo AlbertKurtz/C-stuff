@@ -41,7 +41,7 @@ int main ()
 	printf("\t\tEAT IT\t\t\n\n\t\tKurtz's\n\n");
 	printf("\n You are the W and you have to eat the X.\n Ready?\n");
 	sleep(1);
-	printf("use the numbers WSAD and press Enter to move\n press any key and then Enter\n");
+	printf("press Enter\n");
 	scanf("%c", &any);
 	refresh();
 	arena_init(player, enemy);
