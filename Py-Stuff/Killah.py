@@ -118,7 +118,7 @@ def arena_init(enemies):
 
 def main():
     clear()
-    print "\t\tEAT IT\t\t\n\n\t\tKurtz's\n\n"
+    print "\t\tEAT IT\t\t\n\n\t\tKurtz+Dodo\n\n"
     print "\n You are the W and you have to eat the X.\n Ready?\n"
     time.sleep(1)
     raw_input("press Enter")
