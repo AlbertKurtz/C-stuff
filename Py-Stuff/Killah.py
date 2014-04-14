@@ -13,6 +13,7 @@ class InputListener(threading.Thread):
     def __init__(self, buff):
         super(InputListener, self).__init__()
         self._buff = buff
+        self.stop_event = threading.Event()
 
     def run(self):
         import termios, fcntl, sys, os
@@ -27,7 +28,7 @@ class InputListener(threading.Thread):
         fcntl.fcntl(fd, fcntl.F_SETFL, oldflags | os.O_NONBLOCK)
 
         try:
-            while 1:
+            while self.stop_event.is_set() == False:
                 try:
                     c = sys.stdin.read(1)
                     self._buff.append(c)
@@ -35,6 +36,34 @@ class InputListener(threading.Thread):
         finally:
             termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
             fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
+
+        def stop(self):
+            if self.isAlive() == True:
+                # set event to signal thread to terminate
+                self.stop_event.set()
+                # block calling thread until thread really has terminated
+                self.join()
+
+
+class RandomListener(threading.Thread):
+
+    def __init__(self, buff):
+        super(RandomListener, self).__init__()
+        self._buff = buff
+        self.stop_event = threading.Event()
+
+    def run(self):
+        while self.stop_event.is_set() == False:
+            time.sleep(0.2)
+            c = random.choice("wasd")
+            self._buff.append(c)
+
+    def stop(self):
+        if self.isAlive() == True:
+            # set event to signal thread to terminate
+            self.stop_event.set()
+            # block calling thread until thread really has terminated
+            self.join()
 
 
 class agent(object):
@@ -44,6 +73,14 @@ class agent(object):
         self.y = y
         self.symb = sy
         self.player = player
+        self.buff = deque()
+        if not player:
+            self.brain = RandomListener(self.buff)
+            self.brain.start()
+        else:
+            self.brain = InputListener(self.buff)
+            self.brain.start()
+
 
     def move(self, ch):
         if ch == 'w':
@@ -94,10 +131,16 @@ class arena(object):
         self._matrix = self.matrix(self.n)
         for ag in self._agents:
             if not ag.player:
-                c = random.choice("wasd")
-                ag.move(c)
+                if ag.buff:
+                    c = ag.buff.popleft()
+                    ag.move(c)
             self._matrix[ag.y+1][ag.x+1] = ag.symb
         refresh()
+
+    def stop(self):
+        for ag in self._agents:
+            if ag.brain.isAlive():
+                ag.brain.stop()
 
 
 def clear():
@@ -117,28 +160,25 @@ def arena_init(enemies):
     return ar
 
 def main():
+    exit = False
     clear()
     print "\t\tEAT IT\t\t\n\n\t\tKurtz+Dodo\n\n"
     print "\n You are the W and you have to eat the X.\n Ready?\n"
     time.sleep(1)
     raw_input("press Enter")
-    ARENA = arena_init(1)
+    ARENA = arena_init(3)
     player = agent(0, 0, 'W', True)
-    buff = deque()
-    a = InputListener(buff)
-    a.start()
     ARENA.add(player)
-    while True:
+    while not exit:
 
         ARENA.update()
         print ARENA
-        time.sleep(100.0 / 1000.0)
-        if buff:
-            c = buff.popleft()
+        time.sleep(0.1)
+        if player.buff:
+            c = player.buff.popleft()
             if c == 'q':
-                break
+                exit = True
             player.move(c)
-    a.join()
 
 
 
