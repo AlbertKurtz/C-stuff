@@ -122,7 +122,7 @@ class arena(object):
     def __init__(self, n):
         self.n = n
         self._matrix = self.matrix(n)
-        self._agents = []
+        self.agents = []
 
     def __str__(self):
         return "\n".join(" ".join(row) for row in self._matrix)
@@ -133,15 +133,28 @@ class arena(object):
         return border + content + border
 
     def add(self, agent):
-        self._agents.append(agent)
+        self.agents.append(agent)
 
     def get(self, agent):
-        i = self._agents.index(agent)
-        return self._agents[i]
+        i = self.agents.index(agent)
+        return self.agents[i]
+
+    def check(self):
+        s_ag = sorted(self.agents, key=lambda ag: (ag.x, ag.y, -ag.player))
+        prev = (-1, -1)
+        death = []
+        for ag in s_ag:
+            if ag.player:
+                prev = (ag.x, ag.y)
+            elif prev[0] == ag.x and prev[1] == ag.y:
+                death.append(ag)
+                ag.brain.stop()
+        self.agents = filter(lambda ag: ag not in death, self.agents)
 
     def update(self):
+        self.check()
         self._matrix = self.matrix(self.n)
-        for ag in self._agents:
+        for ag in self.agents:
             if not ag.player:
                 if ag.buff:
                     c = ag.buff.popleft()
@@ -149,8 +162,14 @@ class arena(object):
             self._matrix[ag.y+1][ag.x+1] = ag.symb
         refresh()
 
-    def stop(self):
-        for ag in self._agents:
+    def winner(self):
+        if len(self.agents) == 1:
+            return True
+        else:
+            return False
+
+    def exit(self):
+        for ag in self.agents:
             if ag.brain.isAlive():
                 ag.brain.stop()
 
@@ -183,7 +202,7 @@ def main():
     ARENA = arena_init(1)
     player = agent(0, 0, 'W', True)
     ARENA.add(player)
-    while not exit:
+    while not exit and not ARENA.winner():
         ARENA.update()
         print ARENA
         time.sleep(0.1)
@@ -194,7 +213,11 @@ def main():
             player.move(c)
         else:
             player.move()
-    ARENA.stop()
+
+    ARENA.exit()
+    refresh()
+    print "\n\n\n\t\tYOU WIN\t\t\n\n"
+    return 0
 
 
 if __name__ == "__main__":
