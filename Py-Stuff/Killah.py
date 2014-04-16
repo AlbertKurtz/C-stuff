@@ -8,6 +8,7 @@ from utility import Singleton
 
 
 N = 15
+En= 10 #NUMBER OF ENEMIES
 
 
 class InputListener(Singleton, threading.Thread):
@@ -199,7 +200,7 @@ def main():
     print "\n You are the W and you have to eat the X.\n Ready?\n"
     time.sleep(1)
     raw_input("press Enter")
-    ARENA = arena_init(1)
+    ARENA = arena_init(En)
     player = agent(0, 0, 'W', True)
     ARENA.add(player)
     while not exit and not ARENA.winner():

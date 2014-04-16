@@ -97,9 +97,7 @@ int arena_init(int player[2], int enemy[2])
 	}
 	printf("\n");
 
-	return player[2];
-	return enemy[2];
-
+	return player[2], enemy[2];
 }
 
 void refresh ()
@@ -148,7 +146,6 @@ short int arena (int player[2], int enemy[2], short int death)
 				printf("\n");
 
 			}
-			//printf("\n");
 	}
 
 	return death;
@@ -157,9 +154,6 @@ short int arena (int player[2], int enemy[2], short int death)
 
 int move (char arrow, int player[2], int enemy[2])
 {
-
-
-
 			if(arrow== 'w')
 			{
 				if ((player[0]-1)<0)
@@ -178,10 +172,6 @@ int move (char arrow, int player[2], int enemy[2])
 				else
 				{player[1]= player[1]-1;}
 			}
-
-
-
-		//	printf("%d  %d", player[0], player[1]);
 
 					srand(time(NULL));
 					float x,y;
@@ -219,11 +209,5 @@ int move (char arrow, int player[2], int enemy[2])
 
 
 	arrow='o';
-	return arrow;
-	return player[2];
-	return enemy[2];
-
-
-
-
+	return arrow, player[2], enemy[2];
 }
