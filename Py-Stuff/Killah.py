@@ -11,12 +11,18 @@ N = 15
 En= 10 #NUMBER OF ENEMIES
 
 
-class InputListener(Singleton, threading.Thread):
+class InputListener(threading.Thread):
+    __metaclass__ = Singleton
 
     def __init__(self):
         super(InputListener, self).__init__()
-        self.buff = deque(maxlen=5)
+        self.buffers = []
+        self.daemon = True
         self.stop_event = threading.Event()
+
+    def register(self, buff):
+        assert isinstance(buff, deque)
+        self.buffers.append(buff)
 
     def run(self):
         import termios
@@ -38,40 +44,34 @@ class InputListener(Singleton, threading.Thread):
             while not self.stop_event.is_set():
                 try:
                     c = sys.stdin.read(1)
-                    self.buff.append(c)
+                    for b in self.buffers:
+                        b.append(c)
                 except IOError:
                     pass
         finally:
             termios.tcsetattr(fd, termios.TCSAFLUSH, oldterm)
             fcntl.fcntl(fd, fcntl.F_SETFL, oldflags)
 
-    def stop(self):
-        if self.isAlive():
-            # set event to signal thread to terminate
-            self.stop_event.set()
-            # block calling thread until thread really has terminated
-            self.join()
-
 
 class RandomListener(threading.Thread):
+    __metaclass__ = Singleton
 
     def __init__(self):
         super(RandomListener, self).__init__()
-        self.buff = deque()
+        self.buffers = []
+        self.daemon = True
         self.stop_event = threading.Event()
+
+    def register(self, buff):
+        assert isinstance(buff, deque)
+        self.buffers.append(buff)
 
     def run(self):
         while not self.stop_event.is_set():
             time.sleep(0.1)
-            c = random.choice("wasd")
-            self.buff.append(c)
-
-    def stop(self):
-        if self.isAlive():
-            # set event to signal thread to terminate
-            self.stop_event.set()
-            # block calling thread until thread really has terminated
-            self.join()
+            for b in self.buffers:
+                c = random.choice("wasd")
+                b.append(c)
 
 
 class agent(object):
@@ -84,12 +84,16 @@ class agent(object):
         self.last = 'w'
         if not player:
             self.brain = RandomListener()
-            self.buff = self.brain.buff
-            self.brain.start()
+            self.buff = deque()
+            self.brain.register(self.buff)
+            if not self.brain.isAlive():
+                self.brain.start()
         else:
             self.brain = InputListener()
-            self.buff = self.brain.buff
-            self.brain.start()
+            self.buff = deque()
+            self.brain.register(self.buff)
+            if not self.brain.isAlive():
+                self.brain.start()
 
     def move(self, ch=''):
         if not ch or ch not in "wasd":
@@ -149,7 +153,6 @@ class arena(object):
                 prev = (ag.x, ag.y)
             elif prev[0] == ag.x and prev[1] == ag.y:
                 death.append(ag)
-                ag.brain.stop()
         self.agents = filter(lambda ag: ag not in death, self.agents)
 
     def update(self):
@@ -168,11 +171,6 @@ class arena(object):
             return True
         else:
             return False
-
-    def exit(self):
-        for ag in self.agents:
-            if ag.brain.isAlive():
-                ag.brain.stop()
 
 
 def clear():
@@ -215,7 +213,6 @@ def main():
         else:
             player.move()
 
-    ARENA.exit()
     refresh()
     print "\n\n\n\t\tYOU WIN\t\t\n\n"
     return 0
